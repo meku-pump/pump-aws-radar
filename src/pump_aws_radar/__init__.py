@@ -10,5 +10,5 @@ Quick start (Pump onboarding):
     pump-aws-radar run --all-regions --tags --billing --upload-token <TOKEN>
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Pump (fork of aws-radar by Mor Michaeli)"

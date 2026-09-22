@@ -88,6 +88,8 @@ def main():
                      help="Pump upload token: push the inventory + billing CSVs to Pump instead of drawing a diagram")
     run.add_argument("--api-base", default=DEFAULT_API_BASE,
                      help=f"Pump API base for --upload-token (default: {DEFAULT_API_BASE}; or set PUMP_API_BASE)")
+    run.add_argument("--no-diagram", dest="diagram", action="store_false", default=True,
+                     help="Skip the draw.io diagram (by default 'run' always draws it, even when uploading)")
 
     args = parser.parse_args()
 
@@ -122,9 +124,11 @@ def _run(args):
             "Run: pump-aws-radar run --all-regions --tags --billing --upload-token <TOKEN>"
         )
 
-    total = 2 if uploading else 2
+    drawing = args.diagram
+    total = 1 + (1 if uploading else 0) + (1 if drawing else 0)
+    step = 1
     # Step 1 — inventory (and billing, when --billing is set)
-    print(f"── Step 1/{total}: Running inventory ──")
+    print(f"── Step {step}/{total}: Running inventory ──")
     inv_args = ["pump-aws-radar"]
     if args.profile:     inv_args += ["--profile", args.profile]
     if args.role_arn:    inv_args += ["--role-arn", args.role_arn]
@@ -147,11 +151,12 @@ def _run(args):
     inv_main()
 
     if uploading:
-        # Step 2 — push both CSVs to Pump
+        # Push both CSVs to Pump
         from pump_aws_radar.upload import UploadError, upload_csvs
 
+        step += 1
         billing_csv = args.billing_output or "billing.csv"
-        print(f"\n── Step 2/{total}: Uploading to Pump ({args.api_base}) ──")
+        print(f"\n── Step {step}/{total}: Uploading to Pump ({args.api_base}) ──")
         try:
             upload_csvs(
                 api_base=args.api_base,
@@ -160,16 +165,20 @@ def _run(args):
             )
         except UploadError as e:
             sys.exit(f"\nUpload failed: {e}")
-        print("\n✓ Done! Your inventory and billing data are on their way to Pump.")
-        return
+        print("  ✓ Your inventory and billing data are on their way to Pump.")
 
-    # Step 2 — diagram (default, non-upload path)
-    from pump_aws_radar.drawio import main as dia_main
+    if drawing:
+        # Draw the diagram. Runs on both paths — upload and non-upload — so a
+        # single `run` can push to Pump and still leave a local .drawio.
+        from pump_aws_radar.drawio import main as dia_main
 
-    print(f"\n── Step 2/{total}: Generating diagram ──")
-    sys.argv = ["pump-aws-radar", "--input", args.csv, "--output", args.output]
-    dia_main()
-    print(f"\n✓ Done! Open {args.output} at https://app.diagrams.net/")
+        step += 1
+        print(f"\n── Step {step}/{total}: Generating diagram ──")
+        sys.argv = ["pump-aws-radar", "--input", args.csv, "--output", args.output]
+        dia_main()
+        print(f"  ✓ Open {args.output} at https://app.diagrams.net/")
+
+    print("\n✓ Done!")
 
 
 # Dests whose False value is meaningful and so must be forwarded explicitly.

@@ -26,8 +26,9 @@ colliding.
    pump-aws-radar run --all-regions --tags --billing --upload-token <TOKEN>
    ```
 
-   This inventories the account read-only, pulls Cost Explorer billing, and uploads both
-   `inventory.csv` and `billing.csv` straight to Pump. No diagram is generated on this path.
+   This inventories the account read-only, pulls Cost Explorer billing, uploads both
+   `inventory.csv` and `billing.csv` straight to Pump, and also writes the draw.io diagram
+   locally. Pass `--no-diagram` to skip the diagram and only upload.
 3. Pump detects both files, runs its analysis, and surfaces the findings in the app.
 
 ### What leaves your machine
