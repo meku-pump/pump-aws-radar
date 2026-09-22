@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Push aws-radar CSV output to Pump's self-serve onboarding endpoint.
+Push pump-aws-radar CSV output to Pump's self-serve onboarding endpoint.
 
 This is the fork's only addition over upstream aws-radar. A Pump user mints a
 short-lived upload token in the app; the customer pastes it into
 
-    aws-radar run --all-regions --tags --billing --upload-token <TOKEN>
+    pump-aws-radar run --all-regions --tags --billing --upload-token <TOKEN>
 
 and this module, after the inventory and billing CSVs are written, exchanges the
 token for a presigned S3 PUT URL (one per file) and uploads each CSV directly to

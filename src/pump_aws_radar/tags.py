@@ -1,5 +1,5 @@
 """
-Tag collection for aws-radar.
+Tag collection for pump-aws-radar.
 
 Tags are fetched in bulk per region via the Resource Groups Tagging API
 (``resourcegroupstaggingapi:GetResources``) — one paginated sweep returns

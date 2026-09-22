@@ -1,20 +1,20 @@
 """
 Entry point for:
-    python -m aws_radar
-    aws-radar      (after pip install)
+    python -m pump_aws_radar
+    pump-aws-radar      (after pip install)
 
 This is a fork of gomorsmi/aws-radar. The only functional addition is the
 `run --upload-token` path, which pushes the inventory and billing CSVs to Pump's
-self-serve onboarding endpoint (see aws_radar.upload).
+self-serve onboarding endpoint (see pump_aws_radar.upload).
 """
 
 import argparse
 import os
 import sys
 
-# Mirrors aws_radar.billing.METRICS. Duplicated here so `--help` works without
+# Mirrors pump_aws_radar.billing.METRICS. Duplicated here so `--help` works without
 # boto3 installed — importing billing pulls in boto3 at module scope.
-# tests/test_aws_radar.py keeps the two lists in sync.
+# tests/test_pump_aws_radar.py keeps the two lists in sync.
 METRICS = [
     "UnblendedCost", "AmortizedCost", "BlendedCost",
     "NetUnblendedCost", "NetAmortizedCost", "UsageQuantity",
@@ -27,7 +27,7 @@ DEFAULT_API_BASE = os.environ.get("PUMP_API_BASE", "https://api.pump.co")
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="aws-radar",
+        prog="pump-aws-radar",
         description="AWS resource inventory & draw.io architecture diagram generator",
     )
     sub = parser.add_subparsers(dest="command", required=True)
@@ -92,17 +92,17 @@ def main():
     args = parser.parse_args()
 
     if args.command == "inventory":
-        from aws_radar.inventory import main as inv_main
+        from pump_aws_radar.inventory import main as inv_main
         sys.argv = _rebuild_argv("inventory", args)
         inv_main()
 
     elif args.command == "billing":
-        from aws_radar.billing import main as bil_main
+        from pump_aws_radar.billing import main as bil_main
         sys.argv = _rebuild_argv("billing", args)
         bil_main()
 
     elif args.command == "diagram":
-        from aws_radar.drawio import main as dia_main
+        from pump_aws_radar.drawio import main as dia_main
         sys.argv = _rebuild_argv("diagram", args)
         dia_main()
 
@@ -111,7 +111,7 @@ def main():
 
 
 def _run(args):
-    from aws_radar.inventory import main as inv_main
+    from pump_aws_radar.inventory import main as inv_main
 
     uploading = bool(args.upload_token)
     # The Pump flow needs both CSVs: the backend only starts analysis once
@@ -119,13 +119,13 @@ def _run(args):
     if uploading and not args.billing:
         sys.exit(
             "Error: --upload-token requires --billing so both CSVs are produced.\n"
-            "Run: aws-radar run --all-regions --tags --billing --upload-token <TOKEN>"
+            "Run: pump-aws-radar run --all-regions --tags --billing --upload-token <TOKEN>"
         )
 
     total = 2 if uploading else 2
     # Step 1 — inventory (and billing, when --billing is set)
     print(f"── Step 1/{total}: Running inventory ──")
-    inv_args = ["aws-radar"]
+    inv_args = ["pump-aws-radar"]
     if args.profile:     inv_args += ["--profile", args.profile]
     if args.role_arn:    inv_args += ["--role-arn", args.role_arn]
     if args.region:      inv_args += ["--region", args.region]
@@ -148,7 +148,7 @@ def _run(args):
 
     if uploading:
         # Step 2 — push both CSVs to Pump
-        from aws_radar.upload import UploadError, upload_csvs
+        from pump_aws_radar.upload import UploadError, upload_csvs
 
         billing_csv = args.billing_output or "billing.csv"
         print(f"\n── Step 2/{total}: Uploading to Pump ({args.api_base}) ──")
@@ -164,10 +164,10 @@ def _run(args):
         return
 
     # Step 2 — diagram (default, non-upload path)
-    from aws_radar.drawio import main as dia_main
+    from pump_aws_radar.drawio import main as dia_main
 
     print(f"\n── Step 2/{total}: Generating diagram ──")
-    sys.argv = ["aws-radar", "--input", args.csv, "--output", args.output]
+    sys.argv = ["pump-aws-radar", "--input", args.csv, "--output", args.output]
     dia_main()
     print(f"\n✓ Done! Open {args.output} at https://app.diagrams.net/")
 
@@ -180,7 +180,7 @@ NEGATABLE = {"inventory": {"ai"}, "run": {"ai"}}
 
 
 def _rebuild_argv(cmd, args):
-    argv = ["aws-radar"]
+    argv = ["pump-aws-radar"]
     negatable = NEGATABLE.get(cmd, frozenset())
     d = vars(args)
     for k, v in d.items():

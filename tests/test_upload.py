@@ -1,4 +1,4 @@
-"""Tests for the Pump push (aws_radar.upload). No network: urlopen is stubbed."""
+"""Tests for the Pump push (pump_aws_radar.upload). No network: urlopen is stubbed."""
 
 import io
 import json
@@ -6,7 +6,7 @@ import urllib.error
 
 import pytest
 
-from aws_radar import upload
+from pump_aws_radar import upload
 
 
 class _FakeResp:

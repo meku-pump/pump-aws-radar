@@ -30,13 +30,13 @@ try:
 except ImportError:
     sys.exit(
         "\nError: boto3 is not installed in this Python environment.\n\n"
-        "Install it into the same environment as aws-radar:\n"
+        "Install it into the same environment as pump-aws-radar:\n"
         "    python3 -m pip install --user boto3 rich\n\n"
         "On AWS CloudShell the system ships its own boto3, so a --user install of\n"
-        "aws-radar may skip it; the command above puts boto3 alongside aws-radar.\n"
+        "pump-aws-radar may skip it; the command above puts boto3 alongside pump-aws-radar.\n"
         "Alternatively, install everything in an isolated virtual environment:\n"
-        "    python3 -m venv ~/aws-radar-venv\n"
-        "    ~/aws-radar-venv/bin/pip install aws-radar\n"
+        "    python3 -m venv ~/pump-aws-radar-venv\n"
+        "    ~/pump-aws-radar-venv/bin/pip install pump-aws-radar\n"
     )
 
 try:
@@ -695,7 +695,7 @@ def attach_tags(rows, session, regions, account_id,
     Adds ``_tags`` (dict) plus the display columns ``Tags`` and, when
     *want_cost_alloc*, ``CostAllocTags`` to every row.
     """
-    from aws_radar import tags as tagmod
+    from pump_aws_radar import tags as tagmod
 
     print("\nFetching resource tags …")
     arn_tags = {}
@@ -965,7 +965,7 @@ def main():
             export_csv_wide(rows, wide_path)
 
     if args.billing:
-        from aws_radar.billing import run_billing
+        from pump_aws_radar.billing import run_billing
         run_billing(session, account_id,
                     days=args.billing_days,
                     metric=args.billing_metric,

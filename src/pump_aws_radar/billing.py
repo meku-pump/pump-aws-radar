@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Cost Explorer collection for aws-radar.
+Cost Explorer collection for pump-aws-radar.
 
 Pulls daily unblended cost grouped by AWS service for a trailing window
 (90 days by default) via ``ce:GetCostAndUsage`` and writes one CSV row per
 (date, service) pair.
 
 Cost Explorer is a global service reachable only through the us-east-1
-endpoint, so the region flags used elsewhere in aws-radar do not apply here.
+endpoint, so the region flags used elsewhere in pump-aws-radar do not apply here.
 
 Required IAM:
     ce:GetCostAndUsage
@@ -15,9 +15,9 @@ Required IAM:
 Note: Cost Explorer bills $0.01 per paginated API request.
 
 Usage:
-    aws-radar billing --output billing.csv
-    aws-radar billing --days 30 --metric AmortizedCost
-    aws-radar inventory --billing --export inventory.csv
+    pump-aws-radar billing --output billing.csv
+    pump-aws-radar billing --days 30 --metric AmortizedCost
+    pump-aws-radar inventory --billing --export inventory.csv
 """
 
 import argparse
@@ -33,7 +33,7 @@ try:
 except ImportError:
     sys.exit(
         "\nError: boto3 is not installed in this Python environment.\n\n"
-        "Install it into the same environment as aws-radar:\n"
+        "Install it into the same environment as pump-aws-radar:\n"
         "    python3 -m pip install --user boto3 rich\n"
     )
 

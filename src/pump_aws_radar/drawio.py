@@ -201,7 +201,7 @@ def read_csv(path):
     import os
     if not os.path.exists(path):
         print(f"\n✗ File not found: {path}")
-        print(f"  Run first: aws-radar inventory --export {path}\n")
+        print(f"  Run first: pump-aws-radar inventory --export {path}\n")
         sys.exit(1)
     rows = []
     with open(path, newline="") as f:

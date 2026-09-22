@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "aws-radar-test"
+name = "pump-aws-radar"
 version = "0.1.0"
 description = "Fork of aws-radar that pushes AWS inventory + billing CSVs to Pump's self-serve onboarding"
 readme = "README.md"
@@ -41,12 +41,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage   = "https://github.com/meku-pump/aws-radar-test"
-Repository = "https://github.com/meku-pump/aws-radar-test"
+Homepage   = "https://github.com/meku-pump/pump-aws-radar"
+Repository = "https://github.com/meku-pump/pump-aws-radar"
 Upstream   = "https://github.com/gomorsmi/aws-radar"
 
 [project.scripts]
-aws-radar = "aws_radar.__main__:main"
+pump-aws-radar = "pump_aws_radar.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
