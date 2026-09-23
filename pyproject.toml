@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pump-aws-radar"
-version = "1.1.1"
+version = "1.2.0"
 description = "Fork of aws-radar that pushes AWS inventory + billing CSVs to Pump's self-serve onboarding"
 readme = "README.md"
 license = "MIT"

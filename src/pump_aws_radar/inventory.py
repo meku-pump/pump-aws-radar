@@ -23,9 +23,11 @@ from datetime import datetime
 
 try:
     import boto3
+    import botocore.session
     from botocore.config import Config
     from botocore.exceptions import (
         ClientError, NoCredentialsError, EndpointConnectionError, BotoCoreError,
+        ConnectionError as BotoConnectionError,
     )
 except ImportError:
     sys.exit(
@@ -334,6 +336,37 @@ def collect_alb(session, region, account_id):
 # run_collector) actually dies instead of retrying in the background.
 BEDROCK_CONFIG = Config(connect_timeout=5, read_timeout=5,
                         retries={"max_attempts": 2})
+
+# Default config applied to every client on the session (see main()). A dead or
+# unreachable endpoint then fails in seconds instead of hanging for minutes, while
+# real-but-slow responses still complete on the 60s read timeout. Per-client configs
+# (e.g. BEDROCK_CONFIG) still override this.
+INVENTORY_CONFIG = Config(
+    connect_timeout=5,   # a dead endpoint fails in seconds, not minutes
+    read_timeout=60,     # same as botocore's default: slow real responses still complete
+    retries={"mode": "adaptive", "max_attempts": 5},  # handles throttling; no fewer retries than today
+)
+
+# A cheap per-region liveness probe (see region_reachable). Short timeouts and few
+# retries so an unreachable region is ruled out fast, not after minutes of backoff.
+PROBE_CONFIG = Config(connect_timeout=5, read_timeout=10,
+                      retries={"mode": "standard", "max_attempts": 2})
+
+
+def region_reachable(session, region):
+    """Return True if *region*'s endpoint answers a trivial EC2 call.
+
+    Distinguishes "can't connect" (skip the region) from "answered with an error"
+    such as AccessDenied (endpoint is up; let each collector handle its own perms).
+    """
+    ec2 = session.client("ec2", region_name=region, config=PROBE_CONFIG)
+    try:
+        ec2.describe_availability_zones()
+        return True
+    except BotoConnectionError:  # covers EndpointConnectionError and ConnectTimeoutError
+        return False
+    except ClientError:  # the endpoint answered; permissions are for each collector to handle
+        return True
 
 
 def collect_bedrock(session, region, account_id):
@@ -860,8 +893,18 @@ def run_inventory(regions, session, account_id, include_ai=True,
 
     collectors = CORE_COLLECTORS + (AI_COLLECTORS if include_ai else [])
 
+    # Work that didn't complete: (region, service, reason). Printed after the scan so an
+    # incomplete inventory is visible rather than silently short.
+    skipped = []
+
     for region in regions:
         print(f"\n── Region: {region} ──")
+        # A single region with an unreachable endpoint could otherwise stall the whole
+        # scan; rule it out with one quick probe before running its collectors.
+        if not region_reachable(session, region):
+            print("  Region unreachable – skipped")
+            skipped.append((region, "all", "unreachable"))
+            continue
         for label, service, fn in collectors:
             print(f"  Collecting {label} …", end=" ", flush=True)
             if not service_available(session, service, region):
@@ -871,7 +914,14 @@ def run_inventory(regions, session, account_id, include_ai=True,
                 fn, session, region, account_id,
                 timeout=COLLECTOR_TIMEOUTS.get(service))
             print(note or f"{len(results)} found")
+            if note:  # run_collector returns a note only when it errored/timed out/was skipped
+                skipped.append((region, service, note))
             all_rows += results
+
+    if skipped:
+        print(f"\n⚠️  {len(skipped)} item(s) skipped or incomplete:")
+        for region, service, reason in skipped:
+            print(f"   • {region} / {service}: {reason}")
 
     if not any(r for r in all_rows if r.get("Region") != "global"):
         print("\n⚠️  No resources found in the scanned region(s).")
@@ -917,7 +967,12 @@ def main():
     args = parser.parse_args()
 
     try:
-        session = boto3.Session(profile_name=args.profile)
+        # Apply INVENTORY_CONFIG as the session-wide default so all clients (this scan
+        # and the billing pull that reuses this session) get the timeouts/retries without
+        # editing each session.client(...) call.
+        bc_session = botocore.session.get_session()
+        bc_session.set_default_client_config(INVENTORY_CONFIG)
+        session = boto3.Session(botocore_session=bc_session, profile_name=args.profile)
         sts = session.client("sts")
         identity = sts.get_caller_identity()
         account_id = identity["Account"]
