@@ -56,6 +56,10 @@ def test_upload_csvs_exchanges_then_puts(monkeypatch, tmp_path):
     # PUT carries the signed content-type and targets the returned URL.
     assert puts[0].full_url == "https://s3/inventory"
     assert puts[0].headers["Content-type"] == "text/csv"
+    # Both requests send a real User-Agent (Cloudflare blocks the urllib default).
+    assert posts[0].headers["User-agent"] == upload._USER_AGENT
+    assert puts[0].headers["User-agent"] == upload._USER_AGENT
+    assert upload._USER_AGENT.startswith("pump-aws-radar/")
 
 
 def test_expired_token_raises_clear_error(monkeypatch, tmp_path):

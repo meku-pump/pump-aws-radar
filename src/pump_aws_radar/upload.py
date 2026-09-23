@@ -21,6 +21,12 @@ import json
 import urllib.error
 import urllib.request
 
+from pump_aws_radar import __version__
+
+# A real User-Agent: Cloudflare in front of api.pump.co blocks the default
+# urllib agent ("Python-urllib/..."), so the token exchange must identify itself.
+_USER_AGENT = f"pump-aws-radar/{__version__}"
+
 # The backend mounts its router under API_V1_STR (default "/api/v1"). The exchange
 # route is service/api/endpoints/estimate_radar.py :: exchange_token_for_url.
 _URLS_PATH = "/api/v1/estimate/radar/urls"
@@ -43,7 +49,11 @@ def _exchange_token_for_url(api_base: str, token: str, role: str) -> str:
         url,
         data=body,
         method="POST",
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": _USER_AGENT,
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT_SECONDS) as resp:
@@ -77,7 +87,8 @@ def _put_csv(upload_url: str, csv_path: str) -> None:
         upload_url,
         data=data,
         method="PUT",
-        headers={"Content-Type": "text/csv"},
+        # User-Agent isn't required by S3, but keeping both requests identical avoids surprises.
+        headers={"Content-Type": "text/csv", "User-Agent": _USER_AGENT},
     )
     try:
         with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT_SECONDS) as resp:
